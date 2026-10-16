@@ -1,4 +1,4 @@
-from flask import Blueprint, make_response, abort, request
+from flask import Blueprint, make_response, abort, request, Response
 from ..models.task import Task
 from ..db import db
 
@@ -36,8 +36,10 @@ def create_tasks():
     """create new task"""
     request_body = request.get_json()
     new_task = validate_task_data(request_body)
+    
     db.session.add(new_task)
     db.session.commit()
+
     return new_task.to_dict(), 201
 
 
@@ -45,28 +47,39 @@ def create_tasks():
 #                                 Update
 # ================================================================================
 
-
 @task_bp.put("/<task_id>")
 def update_task(task_id):
     """update task by id"""
     task = validate_task(task_id)
-    request_body = request.get_json()
 
-    validate_task_data(request_body)
+    request_body = request.get_json()
+    validate_update_task_data(request_body)
 
     if "title" in request_body:
         task.title = request_body["title"]
+
     if "description" in request_body:
         task.description = request_body["description"]
 
     db.session.commit()
-    return task.to_dict(), 204
+    return Response(status=204, mimetype="application/json")
+
+# ================================================================================
+#                                 Delete
+# ================================================================================
+
+@task_bp.delete("/<task_id>")
+def delete_task(task_id):
+    """delete task by id"""
+    task = validate_task(task_id)
+    db.session.delete(task)
+    db.session.commit()
+    return Response(status=204, mimetype="application/json")
 
 
 # ================================================================================
 #                           Helper function
 # ================================================================================
-
 
 def validate_task(task_id):
     """check if id is valid"""
@@ -85,7 +98,7 @@ def validate_task(task_id):
 
 def validate_task_data(request_body):
     """check if request body is valid"""
-    
+
     if "title" not in request_body or "description" not in request_body:
         abort(make_response({"details": "Invalid data"}, 400))
 
@@ -105,5 +118,18 @@ def validate_task_data(request_body):
                 400,
             )
         )
-
     return Task.from_dict(request_body)
+
+def validate_update_task_data(request_body):
+    """check if request body is valid"""
+    if "title" not in request_body and "description" not in request_body:
+        abort(make_response({"details": "Invalid data"}, 400))
+
+    for field in ("title", "description"):
+        if field in request_body and len(request_body[field]) < 4:
+            abort(
+                make_response(
+                    {"details": f"Invalid data, {field} must be at least 4 characters long"},
+                    400,
+                )
+            )
