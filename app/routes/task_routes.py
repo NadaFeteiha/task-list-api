@@ -14,7 +14,14 @@ task_bp = Blueprint("task_bp", __name__, url_prefix="/tasks")
 def get_tasks():
     """Get all tasks"""
     query = db.select(Task)
+
+    named_tasks = request.args.get("sort")
+    if named_tasks == "asc":
+        query = query.order_by(Task.title.asc())
+    elif named_tasks == "desc":
+        query = query.order_by(Task.title.desc())
     tasks = db.session.scalars(query).all()
+
     tasks_response = [task.to_dict() for task in tasks]
     return tasks_response, 200
 
@@ -36,7 +43,7 @@ def create_tasks():
     """create new task"""
     request_body = request.get_json()
     new_task = validate_task_data(request_body)
-    
+
     db.session.add(new_task)
     db.session.commit()
 
@@ -46,6 +53,7 @@ def create_tasks():
 # ================================================================================
 #                                 Update
 # ================================================================================
+
 
 @task_bp.put("/<task_id>")
 def update_task(task_id):
@@ -64,9 +72,11 @@ def update_task(task_id):
     db.session.commit()
     return Response(status=204, mimetype="application/json")
 
+
 # ================================================================================
 #                                 Delete
 # ================================================================================
+
 
 @task_bp.delete("/<task_id>")
 def delete_task(task_id):
@@ -80,6 +90,7 @@ def delete_task(task_id):
 # ================================================================================
 #                           Helper function
 # ================================================================================
+
 
 def validate_task(task_id):
     """check if id is valid"""
@@ -120,6 +131,7 @@ def validate_task_data(request_body):
         )
     return Task.from_dict(request_body)
 
+
 def validate_update_task_data(request_body):
     """check if request body is valid"""
     if "title" not in request_body and "description" not in request_body:
@@ -129,7 +141,9 @@ def validate_update_task_data(request_body):
         if field in request_body and len(request_body[field]) < 4:
             abort(
                 make_response(
-                    {"details": f"Invalid data, {field} must be at least 4 characters long"},
+                    {
+                        "details": f"Invalid data, {field} must be at least 4 characters long"
+                    },
                     400,
                 )
             )
