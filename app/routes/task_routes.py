@@ -1,6 +1,7 @@
 from flask import Blueprint, make_response, abort, request, Response
 from ..models.task import Task
 from ..db import db
+from ..services.slack import send_slack_notification
 
 
 task_bp = Blueprint("task_bp", __name__, url_prefix="/tasks")
@@ -69,6 +70,26 @@ def update_task(task_id):
     if "description" in request_body:
         task.description = request_body["description"]
 
+    db.session.commit()
+    return Response(status=204, mimetype="application/json")
+
+
+@task_bp.patch("/<task_id>/mark_complete")
+def mark_complete(task_id):
+    """mark task as complete"""
+    task = validate_task(task_id)
+    task.completed_at = db.func.now()
+    db.session.commit()
+
+    send_slack_notification(f"Someone just completed the task {task.title}")
+    return Response(status=204, mimetype="application/json")
+
+
+@task_bp.patch("/<task_id>/mark_incomplete")
+def mark_incomplete(task_id):
+    """mark task as incomplete"""
+    task = validate_task(task_id)
+    task.completed_at = None
     db.session.commit()
     return Response(status=204, mimetype="application/json")
 
@@ -147,3 +168,4 @@ def validate_update_task_data(request_body):
                     400,
                 )
             )
+            

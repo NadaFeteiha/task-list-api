@@ -24,5 +24,5 @@ class Task(db.Model):  # type: ignore
         new_task = cls()
         new_task.title = task_data["title"]
         new_task.description = task_data["description"]
-        new_task.completed_at = task_data.get("completed_at")
+        new_task.completed_at = task_data.get("completed_at", None)
         return new_task
