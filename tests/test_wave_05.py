@@ -1,69 +1,65 @@
 from app.models.goal import Goal
 import pytest
 
-@pytest.mark.skip(reason="No way to test this feature yet")
+
 def test_goal_to_dict():
-    #Arrange
+    # Arrange
     new_goal = Goal(id=1, title="Seize the Day!")
-    
-    #Act
+
+    # Act
     goal_dict = new_goal.to_dict()
 
-    #Assert
+    # Assert
     assert goal_dict["id"] == 1
     assert goal_dict["title"] == "Seize the Day!"
 
-@pytest.mark.skip(reason="No way to test this feature yet")
+
 def test_goal_to_dict_no_id():
-    #Arrange
+    # Arrange
     new_goal = Goal(title="Seize the Day!")
-    
-    #Act
+
+    # Act
     goal_dict = new_goal.to_dict()
 
-    #Assert
+    # Assert
     assert goal_dict["id"] is None
     assert goal_dict["title"] == "Seize the Day!"
 
-@pytest.mark.skip(reason="No way to test this feature yet")
+
 def test_goal_to_dict_no_title():
-    #Arrange
+    # Arrange
     new_goal = Goal(id=1)
-    
-    #Act
+
+    # Act
     goal_dict = new_goal.to_dict()
 
-    #Assert
+    # Assert
     assert goal_dict["id"] == 1
     assert goal_dict["title"] is None
 
 
-
-@pytest.mark.skip(reason="No way to test this feature yet")
 def test_goal_from_dict():
-    #Arrange
-    goal_dict =  {
+    # Arrange
+    goal_dict = {
         "title": "Seize the Day!",
     }
 
-    #Act
-    goal_obj =  Goal.from_dict(goal_dict)
+    # Act
+    goal_obj = Goal.from_dict(goal_dict)
 
-    #Assert
+    # Assert
     assert goal_obj.title == "Seize the Day!"
 
-@pytest.mark.skip(reason="No way to test this feature yet")
-def test_goal_from_dict_no_title():
-    #Arrange
-    goal_dict =  {
-    }
 
-    #Act & Assert
-    with pytest.raises(KeyError, match = 'title'):
+def test_goal_from_dict_no_title():
+    # Arrange
+    goal_dict = {}
+
+    # Act & Assert
+    with pytest.raises(KeyError, match="title"):
         Goal.from_dict(goal_dict)
 
 
-@pytest.mark.skip(reason="No way to test this feature yet")
 def test_get_goals_no_saved_goals(client):
     # Act
     response = client.get("/goals")
@@ -74,7 +70,6 @@ def test_get_goals_no_saved_goals(client):
     assert response_body == []
 
 
-@pytest.mark.skip(reason="No way to test this feature yet")
 def test_get_goals_one_saved_goal(client, one_goal):
     # Act
     response = client.get("/goals")
@@ -83,15 +78,9 @@ def test_get_goals_one_saved_goal(client, one_goal):
     # Assert
     assert response.status_code == 200
     assert len(response_body) == 1
-    assert response_body == [
-        {
-            "id": 1,
-            "title": "Build a habit of going outside daily"
-        }
-    ]
+    assert response_body == [{"id": 1, "title": "Build a habit of going outside daily"}]
 
 
-@pytest.mark.skip(reason="No way to test this feature yet")
 def test_get_goal(client, one_goal):
     # Act
     response = client.get("/goals/1")
@@ -99,10 +88,7 @@ def test_get_goal(client, one_goal):
 
     # Assert
     assert response.status_code == 200
-    assert response_body == {
-        "id": 1,
-        "title": "Build a habit of going outside daily"
-    }
+    assert response_body == {"id": 1, "title": "Build a habit of going outside daily"}
 
 
 @pytest.mark.skip(reason="test to be completed by student")
@@ -120,20 +106,14 @@ def test_get_goal_not_found(client):
     # ---- Complete Test ----
 
 
-@pytest.mark.skip(reason="No way to test this feature yet")
 def test_create_goal(client):
     # Act
-    response = client.post("/goals", json={
-        "title": "My New Goal"
-    })
+    response = client.post("/goals", json={"title": "My New Goal"})
     response_body = response.get_json()
 
     # Assert
     assert response.status_code == 201
-    assert response_body == {
-        "id": 1,
-        "title": "My New Goal"
-    }
+    assert response_body == {"id": 1, "title": "My New Goal"}
 
 
 @pytest.mark.skip(reason="test to be completed by student")
@@ -206,6 +186,4 @@ def test_create_goal_missing_title(client):
 
     # Assert
     assert response.status_code == 400
-    assert response_body == {
-        "details": "Invalid data"
-    }
+    assert response_body == {"details": "Invalid data"}
