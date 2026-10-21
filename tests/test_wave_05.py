@@ -116,12 +116,16 @@ def test_create_goal(client):
 def test_update_goal(client, one_goal):
     # Act
     response = client.put("/goals/1", json={"title": "Updated Goal Title"})
-    response_body = response.get_json()
 
     # Assert
+    assert response.status_code == 204
+    assert response.mimetype == "application/json"
+
+    # Check that the goal was updated
+    response = client.get("/goals/1")
+    response_body = response.get_json()
     assert response.status_code == 200
-    assert response_body["id"] == 1
-    assert response_body["title"] == "Updated Goal Title"
+    assert response_body == {"id": 1, "title": "Updated Goal Title"}
 
 
 def test_update_goal_not_found(client):
