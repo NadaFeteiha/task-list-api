@@ -1,7 +1,11 @@
 from flask import Blueprint, make_response, abort, request, Response
 from ..models.task import Task
 from ..db import db
-from .route_utilities import validate_model, create_model
+from .route_utilities import (
+    validate_model,
+    create_model_with_response,
+    get_models_with_filters,
+)
 from ..services.slack import send_slack_notification
 
 
@@ -15,17 +19,7 @@ task_bp = Blueprint("task_bp", __name__, url_prefix="/tasks")
 @task_bp.get("")
 def get_tasks():
     """Get all tasks"""
-    query = db.select(Task)
-
-    named_tasks = request.args.get("sort")
-    if named_tasks == "asc":
-        query = query.order_by(Task.title.asc())
-    elif named_tasks == "desc":
-        query = query.order_by(Task.title.desc())
-    tasks = db.session.scalars(query).all()
-
-    tasks_response = [task.to_dict() for task in tasks]
-    return tasks_response, 200
+    return get_models_with_filters(Task, request.args), 200
 
 
 @task_bp.get("/<task_id>")
@@ -45,7 +39,7 @@ def create_tasks():
     """create new task"""
     request_body = request.get_json()
     validate_task_data(request_body)
-    return create_model(Task, request_body)
+    return create_model_with_response(Task, request_body)
 
 
 # ================================================================================
@@ -109,6 +103,7 @@ def delete_task(task_id):
 #                           Helper function
 # ================================================================================
 
+
 def validate_task_data(request_body):
     """check if request body is valid"""
 
@@ -116,7 +111,11 @@ def validate_task_data(request_body):
         abort(make_response({"details": "Invalid data"}, 400))
 
     if request_body["title"] == "" or request_body["description"] == "":
-        abort(make_response({"details": "Invalid data, title and description cannot be empty"}, 400))
+        abort(
+            make_response(
+                {"details": "Invalid data, title and description cannot be empty"}, 400
+            )
+        )
 
 
 def validate_update_task_data(request_body):
@@ -126,5 +125,8 @@ def validate_update_task_data(request_body):
 
     for field in ("title", "description"):
         if field in request_body and request_body[field] == "":
-            abort(make_response({"details": f"Invalid data, {field} cannot be empty"}, 400))
-            
+            abort(
+                make_response(
+                    {"details": f"Invalid data, {field} cannot be empty"}, 400
+                )
+            )
