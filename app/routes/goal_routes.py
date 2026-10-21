@@ -1,6 +1,8 @@
 from flask import Blueprint, make_response, abort, request, Response
 from ..models.goal import Goal
+from ..models.task import Task
 from ..db import db
+from .route_utilities import validate_model, create_model
 
 goal_bp = Blueprint("goal_bp", __name__, url_prefix="/goals")
 
@@ -27,9 +29,20 @@ def get_goals():
 @goal_bp.get("/<goal_id>")
 def get_specific_goal(goal_id):
     """Get a specific goal by ID"""
-    goal = validate_goal(goal_id)
+    goal = validate_model(Goal, goal_id)
 
     return goal.to_dict(), 200
+
+
+@goal_bp.get("/<goal_id>/tasks")
+def get_tasks_of_goal(goal_id):
+    """Get a specific goal with its associated tasks"""
+    goal = validate_model(Goal, goal_id)
+
+    goal_response = goal.to_dict()
+    goal_response["tasks"] = [task.to_dict() for task in goal.tasks]
+
+    return goal_response, 200
 
 
 # ===============================================================================
@@ -42,12 +55,31 @@ def create_goal():
     """Create a new goal"""
 
     request_body = request.get_json()
-    new_goal = validate_goal_data(request_body)
+    return create_model(Goal, request_body)
 
-    db.session.add(new_goal)
+
+@goal_bp.post("/<goal_id>/tasks")
+def add_tasks_id_to_goal(goal_id):
+    """Associate task IDs with a specific goal"""
+
+    goal = validate_model(Goal, goal_id)
+    request_body = request.get_json()
+
+    task_ids = request_body.get("task_ids")
+    if not isinstance(task_ids, list):
+        abort(make_response({"details": "Invalid data"}, 400))
+
+    # Find each task (404 if one doesn't exist)
+    tasks = []
+    for task_id in task_ids:
+        task = validate_model(Task, task_id)
+        tasks.append(task)
+
+    # Replace the goal's old tasks with the new list
+    goal.tasks = tasks
     db.session.commit()
 
-    return new_goal.to_dict(), 201
+    return {"id": goal.id, "task_ids": task_ids}, 200
 
 
 # ===============================================================================
@@ -59,16 +91,16 @@ def create_goal():
 def update_goal(goal_id):
     """Update an existing goal by ID"""
 
-    goal = validate_goal(goal_id)
+    goal = validate_model(Goal, goal_id)
     request_body = request.get_json()
 
     if "title" not in request_body:
-        abort(make_response({"detail": "Missing title in request body"}, 400))
+        abort(make_response({"details": "Invalid data"}, 400))
 
     goal.title = request_body["title"]
     db.session.commit()
 
-    return goal.to_dict(), 200
+    return Response(status=204, mimetype="application/json")
 
 
 # ===============================================================================
@@ -80,38 +112,9 @@ def update_goal(goal_id):
 def delete_goal(goal_id):
     """Delete a goal by ID"""
 
-    goal = validate_goal(goal_id)
+    goal = validate_model(Goal, goal_id)
 
     db.session.delete(goal)
     db.session.commit()
 
     return Response(status=204, mimetype="application/json")
-
-
-# ===============================================================================
-#                               Helper Functions
-# ===============================================================================
-
-
-def validate_goal(goal_id):
-    """Validate goal ID and return the corresponding Goal object"""
-    try:
-        goal_id = int(goal_id)
-    except ValueError:
-        abort(make_response({"details": "Invalid goal ID"}, 400))
-
-    goal = db.session.get(Goal, goal_id)
-
-    if not goal:
-        abort(make_response({"details": f"Goal with id = {goal_id} not found"}, 404))
-
-    return goal
-
-
-def validate_goal_data(request_body):
-    """Validate the request body for creating or updating a goal"""
-
-    if "title" not in request_body:
-        abort(make_response({"details": "Invalid data"}, 400))
-
-    return Goal.from_dict(request_body)
