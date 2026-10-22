@@ -5,6 +5,7 @@ from .route_utilities import (
     validate_model,
     create_model_with_response,
     get_models_with_filters,
+    update_model,
 )
 from ..services.slack import send_slack_notification
 
@@ -38,7 +39,7 @@ def get_task(task_id):
 def create_tasks():
     """create new task"""
     request_body = request.get_json()
-    validate_task_data(request_body)
+    validate_title_not_empty(request_body)
     return create_model_with_response(Task, request_body)
 
 
@@ -55,13 +56,7 @@ def update_task(task_id):
     request_body = request.get_json()
     validate_update_task_data(request_body)
 
-    if "title" in request_body:
-        task.title = request_body["title"]
-
-    if "description" in request_body:
-        task.description = request_body["description"]
-
-    db.session.commit()
+    update_model(task, request_body, ("title", "description"))
     return Response(status=204, mimetype="application/json")
 
 
@@ -104,18 +99,10 @@ def delete_task(task_id):
 # ================================================================================
 
 
-def validate_task_data(request_body):
-    """check if request body is valid"""
-
-    if "title" not in request_body or "description" not in request_body:
-        abort(make_response({"details": "Invalid data"}, 400))
-
-    if request_body["title"] == "" or request_body["description"] == "":
-        abort(
-            make_response(
-                {"details": "Invalid data, title and description cannot be empty"}, 400
-            )
-        )
+def validate_title_not_empty(request_body):
+    """reject a request body whose title is an empty string"""
+    if request_body.get("title") == "":
+        abort(make_response({"details": "Invalid data, title cannot be empty"}, 400))
 
 
 def validate_update_task_data(request_body):
@@ -123,10 +110,4 @@ def validate_update_task_data(request_body):
     if "title" not in request_body and "description" not in request_body:
         abort(make_response({"details": "Invalid data"}, 400))
 
-    for field in ("title", "description"):
-        if field in request_body and request_body[field] == "":
-            abort(
-                make_response(
-                    {"details": f"Invalid data, {field} cannot be empty"}, 400
-                )
-            )
+    validate_title_not_empty(request_body)

@@ -43,6 +43,15 @@ def create_model_with_response(cls, model_data):
     return new_model.to_dict(), 201
 
 
+def update_model(model, model_data, allowed_fields):
+    """Update the allowed attributes of a model instance from request data"""
+    for field in allowed_fields:
+        if field in model_data and hasattr(model, field):
+            setattr(model, field, model_data[field])
+
+    db.session.commit()
+
+
 def get_models_with_filters(cls, filters=None):
     """Return all model instances as dicts"""
     query = db.select(cls)
@@ -51,16 +60,19 @@ def get_models_with_filters(cls, filters=None):
     sort = filters.pop("sort", None)
 
     for attribute, value in filters.items():
-        column = cls.__table__.columns.get(attribute)
-        if column is not None and isinstance(column.type, String):
+        if not hasattr(cls, attribute):
+            continue
+        column = getattr(cls, attribute)
+        if isinstance(getattr(column, "type", None), String):
             query = query.where(column.ilike(f"%{value}%"))
 
+    title = getattr(cls, "title")
     if sort == "asc":
-        query = query.order_by(cls.title.asc())
+        query = query.order_by(title.asc())
     elif sort == "desc":
-        query = query.order_by(cls.title.desc())
+        query = query.order_by(title.desc())
     else:
-        query = query.order_by(cls.id)
+        query = query.order_by(getattr(cls, "id"))
 
     models = db.session.scalars(query)
     return [model.to_dict() for model in models]

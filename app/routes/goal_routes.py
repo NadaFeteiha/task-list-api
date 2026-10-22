@@ -6,6 +6,7 @@ from .route_utilities import (
     validate_model,
     create_model_with_response,
     get_models_with_filters,
+    update_model,
 )
 
 goal_bp = Blueprint("goal_bp", __name__, url_prefix="/goals")
@@ -35,10 +36,7 @@ def get_tasks_of_goal(goal_id):
     """Get a specific goal with its associated tasks"""
     goal = validate_model(Goal, goal_id)
 
-    goal_response = goal.to_dict()
-    goal_response["tasks"] = [task.to_dict() for task in goal.tasks]
-
-    return goal_response, 200
+    return goal.to_dict(include_tasks=True), 200
 
 
 # ===============================================================================
@@ -93,8 +91,7 @@ def update_goal(goal_id):
     if "title" not in request_body:
         abort(make_response({"details": "Invalid data"}, 400))
 
-    goal.title = request_body["title"]
-    db.session.commit()
+    update_model(goal, request_body, ("title",))
 
     return Response(status=204, mimetype="application/json")
 
