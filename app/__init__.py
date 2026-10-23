@@ -1,7 +1,7 @@
 from flask import Flask
 from .db import db, migrate
 from .models import task, goal
-from .routes.task_routes import task_bp
+from .routes.task_routes import task_bp, get_tasks
 from .routes.goal_routes import goal_bp
 import os
 from dotenv import load_dotenv
@@ -27,5 +27,8 @@ def create_app(config=None):
     # Register Blueprints here
     app.register_blueprint(task_bp)
     app.register_blueprint(goal_bp)
+
+    # default route
+    app.add_url_rule("/", view_func=get_tasks)
 
     return app
