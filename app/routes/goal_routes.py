@@ -7,6 +7,8 @@ from .route_utilities import (
     create_model_with_response,
     get_models_with_filters,
     update_model,
+    commit_or_abort,
+    validate_title,
 )
 
 goal_bp = Blueprint("goal_bp", __name__, url_prefix="/goals")
@@ -49,6 +51,7 @@ def create_goal():
     """Create a new goal"""
 
     request_body = request.get_json()
+    validate_title(request_body)
     return create_model_with_response(Goal, request_body)
 
 
@@ -58,6 +61,8 @@ def add_tasks_id_to_goal(goal_id):
 
     goal = validate_model(Goal, goal_id)
     request_body = request.get_json()
+    if not isinstance(request_body, dict):
+        abort(make_response({"details": "Invalid data"}, 400))
 
     task_ids = request_body.get("task_ids")
     if not isinstance(task_ids, list):
@@ -71,7 +76,7 @@ def add_tasks_id_to_goal(goal_id):
 
     # Replace the goal's old tasks with the new list
     goal.tasks = tasks
-    db.session.commit()
+    commit_or_abort()
 
     return {"id": goal.id, "task_ids": task_ids}, 200
 
@@ -87,6 +92,7 @@ def update_goal(goal_id):
 
     goal = validate_model(Goal, goal_id)
     request_body = request.get_json()
+    validate_title(request_body)
 
     if "title" not in request_body:
         abort(make_response({"details": "Invalid data"}, 400))
@@ -108,6 +114,6 @@ def delete_goal(goal_id):
     goal = validate_model(Goal, goal_id)
 
     db.session.delete(goal)
-    db.session.commit()
+    commit_or_abort()
 
     return Response(status=204, mimetype="application/json")

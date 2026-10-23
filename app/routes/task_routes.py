@@ -6,6 +6,8 @@ from .route_utilities import (
     create_model_with_response,
     get_models_with_filters,
     update_model,
+    commit_or_abort,
+    validate_title,
 )
 from ..services.slack import send_slack_notification
 
@@ -39,7 +41,7 @@ def get_task(task_id):
 def create_tasks():
     """create new task"""
     request_body = request.get_json()
-    validate_title_not_empty(request_body)
+    validate_title(request_body)
     return create_model_with_response(Task, request_body)
 
 
@@ -65,7 +67,7 @@ def mark_complete(task_id):
     """mark task as complete"""
     task = validate_model(Task, task_id)
     task.completed_at = db.func.now()
-    db.session.commit()
+    commit_or_abort()
 
     send_slack_notification(f"Someone just completed the task {task.title}")
     return Response(status=204, mimetype="application/json")
@@ -76,7 +78,7 @@ def mark_incomplete(task_id):
     """mark task as incomplete"""
     task = validate_model(Task, task_id)
     task.completed_at = None
-    db.session.commit()
+    commit_or_abort()
     return Response(status=204, mimetype="application/json")
 
 
@@ -90,7 +92,7 @@ def delete_task(task_id):
     """delete task by id"""
     task = validate_model(Task, task_id)
     db.session.delete(task)
-    db.session.commit()
+    commit_or_abort()
     return Response(status=204, mimetype="application/json")
 
 
@@ -99,15 +101,9 @@ def delete_task(task_id):
 # ================================================================================
 
 
-def validate_title_not_empty(request_body):
-    """reject a request body whose title is an empty string"""
-    if request_body.get("title") == "":
-        abort(make_response({"details": "Invalid data, title cannot be empty"}, 400))
-
-
 def validate_update_task_data(request_body):
     """check if request body is valid"""
+    validate_title(request_body)
+
     if "title" not in request_body and "description" not in request_body:
         abort(make_response({"details": "Invalid data"}, 400))
-
-    validate_title_not_empty(request_body)
