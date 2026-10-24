@@ -24,6 +24,12 @@ class Task(db.Model):
             task_dict["goal_id"] = self.goal_id
         return task_dict
 
+    def to_dict_with_goal(self):
+        task_dict = self.to_dict()
+        if self.goal is not None:
+            task_dict["goal_title"] = self.goal.title
+        return task_dict
+
     @classmethod
     def from_dict(cls, task_data):
         new_task = cls()
