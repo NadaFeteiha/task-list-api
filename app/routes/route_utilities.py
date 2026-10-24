@@ -55,8 +55,9 @@ def update_model(model, model_data, allowed_fields):
     commit_or_abort()
 
 
-def get_models_with_filters(cls, filters=None):
-    """Return all model instances as dicts"""
+def get_models_with_filters(cls, filters=None, serialize=None):
+    """Return all model instances as dicts, using serialize (default: to_dict)"""
+    serialize = serialize or cls.to_dict
     query = db.select(cls)
     filters = dict(filters or {})
 
@@ -78,7 +79,7 @@ def get_models_with_filters(cls, filters=None):
         query = query.order_by(getattr(cls, "id"))
 
     models = db.session.scalars(query)
-    return [model.to_dict() for model in models]
+    return [serialize(model) for model in models]
 
 
 def commit_or_abort():

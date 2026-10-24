@@ -21,8 +21,10 @@ goal_bp = Blueprint("goal_bp", __name__, url_prefix="/goals")
 
 @goal_bp.get("")
 def get_goals():
-    """Get all goals"""
-    return get_models_with_filters(Goal, request.args), 200
+    """Get all goals with their tasks"""
+    return get_models_with_filters(
+        Goal, request.args, lambda goal: goal.to_dict(include_tasks=True)
+    ), 200
 
 
 @goal_bp.get("/<goal_id>")

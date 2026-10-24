@@ -22,7 +22,7 @@ task_bp = Blueprint("task_bp", __name__, url_prefix="/tasks")
 @task_bp.get("")
 def get_tasks():
     """Get all tasks"""
-    return get_models_with_filters(Task, request.args), 200
+    return get_models_with_filters(Task, request.args, Task.to_dict_with_goal), 200
 
 
 @task_bp.get("/<task_id>")
