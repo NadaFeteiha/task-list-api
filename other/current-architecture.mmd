@@ -1,0 +1,47 @@
+flowchart TD
+    Client[HTTP Client]
+
+    subgraph Routes
+        GoalRoutes[goal_routes.py]
+        TaskRoutes[task_routes.py]
+        Utilities[route_utilities.py]
+        Schemas[schemas]
+    end
+
+    subgraph Services
+        GoalService[GoalService]
+        TaskService[TaskService]
+    end
+
+    subgraph Repositories
+        GoalRepo[GoalRepository]
+        TaskRepo[TaskRepository]
+        BaseRepo[BaseRepository]
+    end
+
+    subgraph Models
+        GoalModel[Goal SQLAlchemy Model]
+        TaskModel[Task SQLAlchemy Model]
+    end
+
+    DB[(Database)]
+
+    Client --> GoalRoutes
+    Client --> TaskRoutes
+    GoalRoutes --> Schemas
+    TaskRoutes --> Schemas
+    GoalRoutes --> Utilities
+    TaskRoutes --> Utilities
+    Utilities --> GoalService
+    Utilities --> TaskService
+    GoalRoutes --> GoalService
+    TaskRoutes --> TaskService
+    GoalService --> GoalRepo
+    GoalService --> TaskService
+    TaskService --> TaskRepo
+    GoalRepo --> BaseRepo
+    TaskRepo --> BaseRepo
+    BaseRepo --> GoalModel
+    BaseRepo --> TaskModel
+    GoalModel --> DB
+    TaskModel --> DB

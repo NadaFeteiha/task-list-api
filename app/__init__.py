@@ -1,8 +1,10 @@
 from flask import Flask
 from .db import db, migrate
+from .errors import ServiceError
 from .models import task, goal
 from .routes.task_routes import task_bp, get_tasks
 from .routes.goal_routes import goal_bp
+from .routes.route_utilities import error_response
 import os
 from dotenv import load_dotenv
 
@@ -27,6 +29,9 @@ def create_app(config=None):
     # Register Blueprints here
     app.register_blueprint(task_bp)
     app.register_blueprint(goal_bp)
+
+    # Turn errors raised by schemas and services into 400/404 JSON responses
+    app.register_error_handler(ServiceError, error_response)
 
     # default route
     app.add_url_rule("/", view_func=get_tasks)

@@ -1,0 +1,44 @@
+flowchart TD
+    Client[HTTP Client]
+
+    subgraph API Layer
+        Routes[Routes / Controllers]
+        RequestDTO[Request DTOs]
+        ResponseDTO[Response DTOs]
+    end
+
+    subgraph Application Layer
+        GoalService[Goal Service]
+        TaskService[Task Service]
+    end
+
+    subgraph Domain Layer
+        GoalEntity[Goal Entity]
+        TaskEntity[Task Entity]
+    end
+
+    subgraph Persistence Layer
+        GoalRepository[Goal Repository Interface]
+        TaskRepository[Task Repository Interface]
+        SQLGoalRepo[SQLAlchemy Goal Repository]
+        SQLTaskRepo[SQLAlchemy Task Repository]
+    end
+
+    DB[(Database)]
+
+    Client --> Routes
+    Routes --> RequestDTO
+    RequestDTO --> GoalService
+    RequestDTO --> TaskService
+    GoalService --> GoalRepository
+    TaskService --> TaskRepository
+    GoalRepository --> SQLGoalRepo
+    TaskRepository --> SQLTaskRepo
+    SQLGoalRepo --> GoalEntity
+    SQLTaskRepo --> TaskEntity
+    SQLGoalRepo --> DB
+    SQLTaskRepo --> DB
+    GoalService --> ResponseDTO
+    TaskService --> ResponseDTO
+    ResponseDTO --> Routes
+    Routes --> Client
