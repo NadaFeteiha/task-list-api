@@ -1,15 +1,8 @@
-from flask import Blueprint, make_response, abort, request, Response
+from flask import Blueprint, request, Response
 from ..models.task import Task
-from ..db import db
-from .route_utilities import (
-    validate_model,
-    create_model_with_response,
-    get_models_with_filters,
-    update_model,
-    commit_or_abort,
-    validate_title,
-)
-from ..services.slack import send_slack_notification
+from ..schemas.task_schema import validate_task_create, validate_task_update
+from ..services.task_service import task_service
+from .route_utilities import validate_model, create_model_with_response
 
 
 task_bp = Blueprint("task_bp", __name__, url_prefix="/tasks")
@@ -22,7 +15,8 @@ task_bp = Blueprint("task_bp", __name__, url_prefix="/tasks")
 @task_bp.get("")
 def get_tasks():
     """Get all tasks"""
-    return get_models_with_filters(Task, request.args), 200
+    tasks = task_service.list_all(request.args)
+    return [task.to_dict_with_goal() for task in tasks], 200
 
 
 @task_bp.get("/<task_id>")
@@ -41,7 +35,7 @@ def get_task(task_id):
 def create_tasks():
     """create new task"""
     request_body = request.get_json()
-    validate_title(request_body)
+    validate_task_create(request_body)
     return create_model_with_response(Task, request_body)
 
 
@@ -56,9 +50,9 @@ def update_task(task_id):
     task = validate_model(Task, task_id)
 
     request_body = request.get_json()
-    validate_update_task_data(request_body)
+    validate_task_update(request_body)
 
-    update_model(task, request_body, ("title", "description"))
+    task_service.update(task, request_body)
     return Response(status=204, mimetype="application/json")
 
 
@@ -66,10 +60,7 @@ def update_task(task_id):
 def mark_complete(task_id):
     """mark task as complete"""
     task = validate_model(Task, task_id)
-    task.completed_at = db.func.now()
-    commit_or_abort()
-
-    send_slack_notification(f"Someone just completed the task {task.title}")
+    task_service.mark_complete(task)
     return Response(status=204, mimetype="application/json")
 
 
@@ -77,8 +68,7 @@ def mark_complete(task_id):
 def mark_incomplete(task_id):
     """mark task as incomplete"""
     task = validate_model(Task, task_id)
-    task.completed_at = None
-    commit_or_abort()
+    task_service.mark_incomplete(task)
     return Response(status=204, mimetype="application/json")
 
 
@@ -91,19 +81,5 @@ def mark_incomplete(task_id):
 def delete_task(task_id):
     """delete task by id"""
     task = validate_model(Task, task_id)
-    db.session.delete(task)
-    commit_or_abort()
+    task_service.delete(task)
     return Response(status=204, mimetype="application/json")
-
-
-# ================================================================================
-#                           Helper function
-# ================================================================================
-
-
-def validate_update_task_data(request_body):
-    """check if request body is valid"""
-    validate_title(request_body)
-
-    if "title" not in request_body and "description" not in request_body:
-        abort(make_response({"details": "Invalid data"}, 400))

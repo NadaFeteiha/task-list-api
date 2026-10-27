@@ -79,7 +79,9 @@ def test_get_goals_one_saved_goal(client, one_goal):
     # Assert
     assert response.status_code == 200
     assert len(response_body) == 1
-    assert response_body == [{"id": 1, "title": "Build a habit of going outside daily"}]
+    assert response_body == [
+        {"id": 1, "title": "Build a habit of going outside daily", "tasks": []}
+    ]
 
 
 def test_get_goal(client, one_goal):
